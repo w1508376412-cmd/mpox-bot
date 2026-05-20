@@ -45,7 +45,12 @@ def init_remote_db(db_url):
         print(f"❌ 初始化失败: {e}")
 
 if __name__ == "__main__":
-    url = input("请输入 Railway 的 DATABASE_URL: ").strip()
+    import argparse
+    parser = argparse.ArgumentParser(description="初始化远程数据库")
+    parser.add_argument("--db-url", type=str, help="Railway DATABASE_URL")
+    args = parser.parse_args()
+    
+    url = args.db_url or os.getenv("DATABASE_URL") or input("请输入 Railway 的 DATABASE_URL: ").strip()
     if url:
         init_remote_db(url)
     else:
