@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猴痘知识问答机器人</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: url('/static/bg.png') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #fdfdfd;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #004fc4;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 { font-size: 24px; font-weight: 600; }
+
+        .disclaimer {
+            background: #fff9e6;
+            border: 1px solid #ffeeba;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #856404;
+        }
+
+
+        .chat-area {
+            padding: 20px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user { text-align: right; }
+
+        .message.user .message-content {
+            display: inline-block;
+            padding: 10px 18px;
+            border-radius: 20px;
+            background: #004fc4;
+            color: white;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+
+        /* 回答卡片样式 */
+        .answer-card {
+            background: #fcfcfc;
+            border: 1px solid #ebebeb;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            max-width: 95%;
+        }
+
+
+        .answer-content {
+            line-height: 1.9;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .answer-content h1, .answer-content h2, .answer-content h3 {
+            color: #333;
+            margin: 16px 0 8px 0;
+        }
+
+        .answer-content strong { color: #004fc4; }
+
+        .answer-content ul, .answer-content ol {
+            margin-left: 20px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        .answer-content li { margin: 6px 0; }
+
+        .answer-content p { margin: 8px 0; }
+
+        .card-footer {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .sources {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .sources-title { font-weight: bold; color: #666; margin-bottom: 6px; }
+
+        .source-item { margin: 3px 0; }
+
+        .follow-up {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+
+        .follow-up-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .follow-up-btn {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            margin: 6px 0;
+            background: #f8faff;
+            border: 1px solid #e1e8f5;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+            transition: all 0.2s;
+        }
+
+        .follow-up-btn:hover {
+            background: #004fc4;
+            color: white;
+            border-color: #004fc4;
+            transform: translateX(4px);
+        }
+
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #f0f0f0;
+            background: #ffffff;
+        }
+
+        .user-info {
+            margin-bottom: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .user-info input {
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            background: #f9f9f9;
+        }
+
+        .user-info input:focus { border-color: #004fc4; background: #fff; }
+        .user-info input::placeholder { color: #aaa; }
+
+        .input-group { display: flex; gap: 10px; }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 1px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            background: #f9f9f9;
+        }
+
+        .input-group input:focus { border-color: #004fc4; background: #fff; }
+
+        .input-group button {
+            padding: 12px 30px;
+            background: #f9b915;
+            color: #433200;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .input-group button:hover { background: #eab014; transform: translateY(-1px); }
+        .input-group button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+
+        .loading-dots {
+            text-align: left;
+            padding: 15px 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+
+        /* 抖动动画 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .input-error {
+            animation: shake 0.5s;
+        }
+
+        /* 初始推荐问题样式 */
+        .welcome-suggestions {
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8faff;
+            border-radius: 12px;
+            border: 1px solid #eef2f8;
+        }
+        
+        .welcome-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #004fc4;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .welcome-title::before {
+            content: '💡';
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>猴痘知识问答机器人</h1>
+        </div>
+
+        <div class="disclaimer">
+            ⚠️ 本机器人仅提供猴痘健康科普信息，不能替代医生诊断或治疗。 如出现皮疹、发热、淋巴结肿大等疑似症状，或有可疑接触史，请咨询医疗机构或当地疾控部门。
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="welcome-suggestions" id="welcomeSuggestions">
+                <div class="welcome-title">您可能想了解</div>
+                <div id="initialQuestionsContainer">
+                    <!-- 动态加载初始问题 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="user-info">
+                <input type="text" id="userName" placeholder="请输入姓名" required />
+                <input type="text" id="antiviralId" placeholder="请输入抗病毒编号" required />
+            </div>
+            <div class="input-group">
+                <input type="text" id="questionInput" placeholder="请输入您的问题..." />
+                <button id="sendBtn" onclick="sendQuestion()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatArea = document.getElementById('chatArea');
+        const questionInput = document.getElementById('questionInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const userNameInput = document.getElementById('userName');
+        const antiviralIdInput = document.getElementById('antiviralId');
+        const initialQuestionsContainer = document.getElementById('initialQuestionsContainer');
+
+        // 基础问题库
+        const basicQuestionPool = [
+            '猴痘是什么？',
+            '猴痘的传播途径有哪些？',
+            '猴痘的临床表现有哪些？',
+            '猴痘的潜伏期通常是多久？',
+            '如何预防猴痘感染？',
+            '猴痘可以自愈吗？',
+            '猴痘暴露后多久开始出现症状？',
+            '怀疑感染猴痘后应该去哪里就诊？',
+            '猴痘疫苗可以预防感染吗？'
+        ];
+
+        // 随机选择并显示3个问题
+        function initSuggestions() {
+            const shuffled = [...basicQuestionPool].sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 3);
+            
+            initialQuestionsContainer.innerHTML = '';
+            selected.forEach(q => {
+                const btn = document.createElement('button');
+                btn.className = 'follow-up-btn';
+                btn.textContent = q;
+                btn.onclick = () => sendQuestion(q);
+                initialQuestionsContainer.appendChild(btn);
+            });
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', initSuggestions);
+
+        // 保存最新的回答数据，用于导出Word
+        let lastAnswerData = null;
+
+        // 清除错误状态
+        [userNameInput, antiviralIdInput].forEach(input => {
+            input.addEventListener('input', () => {
+                input.classList.remove('input-error');
+            });
+        });
+
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendQuestion();
+        });
+
+        async function sendQuestion(customQuestion) {
+            const question = customQuestion || questionInput.value.trim();
+            const userName = userNameInput.value.trim();
+            const antiviralId = antiviralIdInput.value.trim();
+
+            if (!question) return;
+
+            let hasError = false;
+            if (!userName) {
+                userNameInput.classList.add('input-error');
+                userNameInput.focus();
+                hasError = true;
+            }
+
+            if (!antiviralId) {
+                antiviralIdInput.classList.add('input-error');
+                if (!hasError) antiviralIdInput.focus();
+                hasError = true;
+            }
+
+            if (hasError) {
+                // 短暂移除类以便再次触发动画（如果用户连续点击）
+                setTimeout(() => {
+                    userNameInput.classList.remove('input-error');
+                    antiviralIdInput.classList.remove('input-error');
+                    if (!userName) userNameInput.classList.add('input-error');
+                    if (!antiviralId) antiviralIdInput.classList.add('input-error');
+                }, 500);
+                return;
+            }
+
+            // 隐藏初始推荐
+            const welcomeSuggestions = document.getElementById('welcomeSuggestions');
+            if (welcomeSuggestions) {
+                welcomeSuggestions.style.display = 'none';
+            }
+
+            // 显示用户消息
+            addUserMessage(question);
+            if (!customQuestion) questionInput.value = '';
+            sendBtn.disabled = true;
+
+            // 显示加载动画
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot';
+            loadingDiv.id = 'loading-msg';
+            loadingDiv.innerHTML = '<div class="loading-dots">正在思考</div>';
+            chatArea.appendChild(loadingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question,
+                        user_name: userName,
+                        antiviral_id: antiviralId,
+                        region: "中国"
+                    })
+                });
+
+                // 移除加载动画
+                const loadingEl = document.getElementById('loading-msg');
+                if (loadingEl) loadingEl.remove();
+
+                if (!response.ok) throw new Error('请求失败');
+
+                const data = await response.json();
+                lastAnswerData = { ...data, question, user_name: userName, antiviral_id: antiviralId };
+
+                displayAnswer(data, question);
+
+            } catch (error) {
+                // 移除加载动画
+                const loadingEl = document.getElementById('loading-msg');
+                if (loadingEl) loadingEl.remove();
+
+                addBotError('抱歉，服务暂时不可用。请稍后再试或直接咨询医疗机构。');
+            } finally {
+                sendBtn.disabled = false;
+                questionInput.focus();
+            }
+        }
+
+        function addUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'message user';
+            div.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function addBotError(text) {
+            const div = document.createElement('div');
+            div.className = 'message bot';
+            div.innerHTML = `<div class="answer-card" style="border-left:3px solid #ff4444;"><p>${text}</p></div>`;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function displayAnswer(data, question) {
+            // 渲染markdown
+            const answerHtml = typeof marked !== 'undefined' ? marked.parse(data.answer) : data.answer.replace(/\n/g, '<br>');
+
+            // 来源
+            let sourcesHtml = '';
+            if (data.sources && data.sources.length > 0) {
+                sourcesHtml = '<div class="sources"><div class="sources-title">📚 参考来源</div>';
+                data.sources.forEach(s => {
+                    // 格式化为：《标题》- 来源
+                    const sourceText = `《${escapeHtml(s.title)}》- ${escapeHtml(s.source)}`;
+                    sourcesHtml += `<div class="source-item">• ${sourceText}</div>`;
+                });
+                sourcesHtml += '</div>';
+            }
+
+            // 推荐问题
+            let followUpHtml = '';
+            if (data.follow_up_questions && data.follow_up_questions.length > 0) {
+                followUpHtml = '<div class="follow-up"><div class="follow-up-title">💡 您可能还想了解</div>';
+                data.follow_up_questions.forEach(q => {
+                    const safeQ = escapeHtml(q);
+                    followUpHtml += `<button class="follow-up-btn" onclick="sendQuestion('${safeQ}')">${safeQ}</button>`;
+                });
+                followUpHtml += '</div>';
+            }
+
+            // 生成唯一ID用于导出
+            const answerId = 'answer-' + Date.now();
+
+            const cardHtml = `
+                <div class="answer-card" id="${answerId}">
+                    <div class="answer-content">${answerHtml}</div>
+                    ${sourcesHtml}
+                    ${followUpHtml}
+                </div>
+            `;
+
+            const div = document.createElement('div');
+            div.className = 'message bot';
+            div.innerHTML = cardHtml;
+
+            // 将回答数据绑定到DOM元素上
+            div.querySelector('.answer-card').dataset.answer = JSON.stringify({
+                answer: data.answer,
+                question: question,
+                sources: data.sources || []
+            });
+
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

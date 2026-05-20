@@ -1,0 +1,13 @@
+venv/
+.env
+*.log
+__pycache__/
+.DS_Store
+data/processed/
+.git/
+*.xlsx
+~$*.docx
+*.csv
+debug.log
+update.log
+server.log

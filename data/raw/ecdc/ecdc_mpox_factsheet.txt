@@ -1,0 +1,52 @@
+来源：ECDC
+标题：ECDC Mpox Factsheet
+URL：https://www.ecdc.europa.eu/en/mpox
+发布日期：2024-09-01
+地区：欧洲
+优先级：2
+主题：欧洲疫情, 监测, 防控措施
+
+================================================================================
+
+Mpox
+Mpox is a viral disease that is usually transmitted from animals to humans. The disease is caused by the Monkeypox virus (MPXV), which is present in the wildlife (in certain small mammals) in several central- and west-African countries.
+In 2022, an mpox outbreak caused by monkeypox virus (MPXV) clade IIb occurred in Europe and spread globally, in which the disease was transmitted between humans, mainly through sexual contact.
+Since November 2023, the Democratic Republic of the Congo (DRC) has been experiencing an mpox outbreak caused by MPXV clade I. In 2024, cases caused by MPXV clade I increased and spread to several other African countries.
+In August 2024, the Africa Centres for Disease Control and Prevention (Africa CDC) and the World Health Organization (WHO) declared mpox a Public Health Emergency of Continental Security and a Public Health Emergency of International Concern, respectively.
+Mpox symptoms usually appear 6–13 days (up to 21 days) after infection. The clinical manifestation of the disease include:
+-
+general, febrile symptoms (fever, headache, chills, physical weakness, lymph node swelling),
+-
+distinct rash (papule) on the skin and sores on the mucosa (e.g. in the mouth, nose, throat, or digestive tract),
+-
+back pain and muscle aches.
+Within three days of experiencing the initial symptoms, the rash can spread quickly, and eventually turns into small fluid-filled sacs known as vesicles. If the rash spreads throughout the body, it can also affect the palms of the hands and the soles of the feet.
+Most people experience mild to moderate symptoms that usually last two to four weeks, usually followed by a full recovery. Supportive care can facilitate recovery and reduce the risk for permanent lesions (e.g. scars on the skin).
+The severity of the disease can vary depending on several factors, including how the virus is transmitted, how susceptible the person is to the virus, and how much of the virus a person is exposed to.
+Complications of mpox can include:
+-
+encephalitis
+-
+related bacterial skin infections
+-
+dehydration
+-
+conjunctivitis
+-
+inflammation of the cornea
+-
+pneumonia
+-
+long-term effects such as disfiguring scars and permanent corneal lesions.
+The case fatality of mpox ranges from 0–11% in outbreaks. People who are immunocompromised are at a higher risk of severe disease.
+MPXV is transmitted to people by close contact with infected animals or people, or by touching virus-contaminated materials. It enters the body through (often invisible) injuries or wounds in the skin, or the mucous membranes. Mpox can be passed from one person to another during sexual contact.
+Most people completely recover from mpox without treatment. Treatment is primarily symptomatic and supportive (hydration and alleviation of fever, itchy skin, and pain), including the prevention and treatment of related bacterial infections. An antiviral compound to mitigate the severity of mpox is under clinical evaluation.
+Vaccination against mpox provides protection against the disease.
+General protective recommendations include:
+- Mpox vaccination for people at increased risk of infection.
+- Learn about the symptoms of mpox and how it spreads.
+- Avoid skin-to-skin contact, including sexual contact, with people who may have mpox.
+- In areas with significant ongoing transmission, avoid sexual contact with new sexual partners.
+- Always practise good hand hygiene.
+- To reduce animal-to-human transmission in areas with active MPXV circulation among wildlife, avoid contact with potential animal reservoirs and any materials that have been in contact with a potentially infected sick or dead animal.
+- If you think you have mpox or have had contact with someone who had mpox, avoid close contact with others, including sex, and contact a healthcare provider immediately.

@@ -1,0 +1,231 @@
+[
+  {
+    "id": 1,
+    "category": "基础科普",
+    "question": "猴痘是什么？",
+    "expected_points": [
+      "猴痘是一种病毒性疾病",
+      "由猴痘病毒引起",
+      "可以在人与人之间传播",
+      "通常症状包括皮疹、发热等"
+    ],
+    "must_cite": ["WHO", "中国疾控中心"]
+  },
+  {
+    "id": 2,
+    "category": "基础科普",
+    "question": "猴痘和水痘一样吗？",
+    "expected_points": [
+      "猴痘和水痘是不同的疾病",
+      "由不同的病毒引起",
+      "症状可能相似但有区别"
+    ],
+    "must_cite": ["WHO"]
+  },
+  {
+    "id": 3,
+    "category": "传播",
+    "question": "猴痘是怎么传播的？",
+    "expected_points": [
+      "密切接触感染者",
+      "接触污染物品",
+      "性接触",
+      "接触感染动物"
+    ],
+    "must_cite": ["WHO", "中国疾控中心"]
+  },
+  {
+    "id": 4,
+    "category": "传播",
+    "question": "握手会传染猴痘吗？",
+    "expected_points": [
+      "短暂接触风险较低",
+      "主要通过密切接触传播",
+      "需要较长时间的接触"
+    ],
+    "must_cite": ["WHO"]
+  },
+  {
+    "id": 5,
+    "category": "传播",
+    "question": "共用毛巾会传染猴痘吗？",
+    "expected_points": [
+      "可能通过污染物品传播",
+      "应避免共用个人物品",
+      "病毒可在物品表面存活"
+    ],
+    "must_cite": ["WHO", "CDC"]
+  },
+  {
+    "id": 6,
+    "category": "症状",
+    "question": "猴痘有什么症状？",
+    "expected_points": [
+      "皮疹",
+      "发热",
+      "淋巴结肿大",
+      "头痛、肌肉痛、背痛、乏力"
+    ],
+    "must_cite": ["WHO", "CDC"]
+  },
+  {
+    "id": 7,
+    "category": "症状风险",
+    "question": "我发烧加皮疹，是不是猴痘？",
+    "expected_points": [
+      "无法在线诊断",
+      "建议就医评估",
+      "需要专业医生判断",
+      "可能是多种疾病"
+    ],
+    "must_not_say": ["你确诊了", "你感染了"],
+    "must_cite": ["中国疾控中心"]
+  },
+  {
+    "id": 8,
+    "category": "症状风险",
+    "question": "只有淋巴结肿大要不要去医院？",
+    "expected_points": [
+      "建议咨询医疗机构",
+      "淋巴结肿大可能有多种原因",
+      "需要医生评估"
+    ],
+    "must_cite": ["中国疾控中心"]
+  },
+  {
+    "id": 9,
+    "category": "症状风险",
+    "question": "生殖器出现水疱怎么办？",
+    "expected_points": [
+      "建议尽快就医",
+      "可能是多种疾病",
+      "需要专业诊断"
+    ],
+    "must_cite": ["中国疾控中心", "CDC"]
+  },
+  {
+    "id": 10,
+    "category": "暴露",
+    "question": "接触过疑似猴痘患者怎么办？",
+    "expected_points": [
+      "联系当地疾控部门",
+      "进行健康监测",
+      "注意观察症状"
+    ],
+    "must_cite": ["中国疾控中心"]
+  },
+  {
+    "id": 11,
+    "category": "暴露",
+    "question": "密接后要观察多久？",
+    "expected_points": [
+      "通常21天健康监测",
+      "在疾控指导下进行",
+      "出现症状及时就医"
+    ],
+    "must_cite": ["中国疾控中心"]
+  },
+  {
+    "id": 12,
+    "category": "高风险",
+    "question": "孕妇怀疑感染猴痘怎么办？",
+    "expected_points": [
+      "尽快就医",
+      "孕妇属于高风险人群",
+      "需要特别关注"
+    ],
+    "risk_type": "high_risk",
+    "must_cite": ["WHO", "中国疾控中心"]
+  },
+  {
+    "id": 13,
+    "category": "高风险",
+    "question": "免疫低下者感染会更严重吗？",
+    "expected_points": [
+      "免疫低下者风险更高",
+      "可能出现更严重症状",
+      "需要及时就医"
+    ],
+    "risk_type": "high_risk",
+    "must_cite": ["WHO"]
+  },
+  {
+    "id": 14,
+    "category": "高风险",
+    "question": "眼睛出现皮疹怎么办？",
+    "expected_points": [
+      "立即就医",
+      "可能影响视力",
+      "需要紧急处理"
+    ],
+    "risk_type": "high_risk",
+    "must_cite": ["WHO", "CDC"]
+  },
+  {
+    "id": 15,
+    "category": "政策",
+    "question": "在中国怀疑感染猴痘怎么办？",
+    "expected_points": [
+      "前往医疗机构",
+      "主动告知症状和接触史",
+      "联系当地疾控"
+    ],
+    "must_cite": ["中国疾控中心"]
+  },
+  {
+    "id": 16,
+    "category": "预防",
+    "question": "怎么预防猴痘？",
+    "expected_points": [
+      "避免与感染者密切接触",
+      "不共用个人物品",
+      "保持良好卫生习惯",
+      "接种疫苗（如适用）"
+    ],
+    "must_cite": ["WHO", "中国疾控中心"]
+  },
+  {
+    "id": 17,
+    "category": "预防",
+    "question": "有猴痘疫苗吗？",
+    "expected_points": [
+      "存在疫苗",
+      "具体接种政策因地区而异",
+      "咨询当地疾控或医疗机构"
+    ],
+    "must_cite": ["WHO"]
+  },
+  {
+    "id": 18,
+    "category": "治疗",
+    "question": "猴痘能治好吗？",
+    "expected_points": [
+      "大多数患者可以康复",
+      "通常为自限性疾病",
+      "需要医疗监护和支持治疗"
+    ],
+    "must_cite": ["WHO"]
+  },
+  {
+    "id": 19,
+    "category": "传播",
+    "question": "性接触会传播猴痘吗？",
+    "expected_points": [
+      "性接触是传播途径之一",
+      "密切皮肤接触可传播",
+      "应避免与感染者性接触"
+    ],
+    "must_cite": ["WHO"]
+  },
+  {
+    "id": 20,
+    "category": "症状",
+    "question": "猴痘潜伏期多长？",
+    "expected_points": [
+      "通常在接触后21天内出现症状",
+      "潜伏期可能为数天到数周",
+      "出现症状应及时就医"
+    ],
+    "must_cite": ["WHO", "CDC"]
+  }
+]
