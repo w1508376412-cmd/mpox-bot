@@ -81,11 +81,14 @@ def add_sample_data():
                 # 插入知识片段
                 for chunk_data in doc_data["chunks"]:
                     chunk_id = str(uuid.uuid4())
+                    # 根据地区设置优先级：中国=1，其他=2
+                    priority = 1 if doc_data["region"] == "中国" else 2
+                    
                     cur.execute(
                         """
                         INSERT INTO chunks
-                        (id, document_id, content, topic, source, url, publish_date, region)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        (id, document_id, content, topic, source, url, publish_date, region, priority)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
                             chunk_id,
@@ -95,7 +98,8 @@ def add_sample_data():
                             doc_data["source"],
                             doc_data["url"],
                             doc_data["publish_date"],
-                            doc_data["region"]
+                            doc_data["region"],
+                            priority
                         )
                     )
 

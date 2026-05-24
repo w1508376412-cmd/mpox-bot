@@ -64,10 +64,11 @@ def generate_vectors_for_existing_data():
                 cur.execute(
                     """
                     UPDATE chunks
-                    SET embedding_json = %s::jsonb
+                    SET embedding = %s::vector,
+                        embedding_json = %s::jsonb
                     WHERE id = %s
                     """,
-                    (embedding_json, chunk_id)
+                    (embedding, embedding_json, chunk_id)
                 )
 
             conn.commit()
