@@ -54,7 +54,7 @@ def generate_vectors_for_existing_data():
 
             # 3. 批量生成向量
             print("\n正在生成向量...")
-            embeddings = embed_batch(contents, batch_size=25)
+            embeddings = embed_batch(contents, batch_size=10)
 
             # 4. 更新数据库
             print("\n正在更新数据库...")
