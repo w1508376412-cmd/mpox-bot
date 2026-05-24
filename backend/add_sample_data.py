@@ -1,9 +1,10 @@
 """添加示例数据到数据库"""
 import psycopg
+import os
 from datetime import date
 import uuid
 
-DATABASE_URL = "postgresql://yanfei@localhost:5432/mpox_bot"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://yanfei@localhost:5432/mpox_bot")
 
 # 示例文档和知识片段
 SAMPLE_DATA = [
