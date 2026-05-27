@@ -5,7 +5,7 @@
 ### 已完成的功能
 
 1. **阿里百炼API集成** ✅
-   - API Key: sk-ccea3301d53e4744a12b66422f29d6fd
+   - API Key: 请通过 `.env` 中的 `ALIBABA_API_KEY` 配置，不要写入文档或代码
    - 模型: text-embedding-v4
    - API地址: https://dashscope.aliyuncs.com/compatible-mode/v1
 
@@ -310,7 +310,7 @@ python generate_vectors.py
 2. 测试API连接：
 ```bash
 curl -X POST https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings \
-  -H "Authorization: Bearer sk-ccea3301d53e4744a12b66422f29d6fd" \
+  -H "Authorization: Bearer $ALIBABA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"text-embedding-v4","input":"测试"}'
 ```
