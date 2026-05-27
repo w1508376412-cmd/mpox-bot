@@ -14,6 +14,38 @@ import os
 settings = get_settings()
 
 
+def ensure_runtime_schema():
+    """Apply small, idempotent migrations needed by the current runtime."""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("ALTER TABLE chunks ADD COLUMN IF NOT EXISTS embedding_json JSONB")
+                cur.execute("ALTER TABLE chunks ADD COLUMN IF NOT EXISTS priority INTEGER DEFAULT 2")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_chunks_embedding_json ON chunks USING gin(embedding_json)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_chunks_priority ON chunks(priority)")
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS user_consultations (
+                        id SERIAL PRIMARY KEY,
+                        user_name TEXT NOT NULL,
+                        antiviral_id TEXT NOT NULL,
+                        question TEXT NOT NULL,
+                        answer TEXT NOT NULL,
+                        risk_type TEXT NOT NULL,
+                        region TEXT DEFAULT '中国',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_user_consultations_antiviral_id ON user_consultations(antiviral_id)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_user_consultations_created_at ON user_consultations(created_at)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_user_consultations_user_name ON user_consultations(user_name)")
+            conn.commit()
+            print("✓ 数据库运行时结构检查完成")
+    except Exception as e:
+        print(f"数据库运行时结构检查失败: {e}")
+
+
 def save_consultation(user_name: str, antiviral_id: str, question: str, answer: str, risk_type: str, region: str):
     """保存用户咨询记录到数据库"""
     try:
@@ -31,6 +63,8 @@ def save_consultation(user_name: str, antiviral_id: str, question: str, answer: 
             print(f"✓ 已保存咨询记录: {user_name} ({antiviral_id})")
     except Exception as e:
         print(f"保存咨询记录失败: {e}")
+
+
 app = FastAPI(
     title="猴痘知识问答机器人",
     description="基于权威来源的猴痘/mpox健康科普问答系统",
@@ -45,6 +79,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    ensure_runtime_schema()
+
 
 # 挂载静态文件
 frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")

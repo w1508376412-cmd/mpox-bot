@@ -27,8 +27,11 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/mpox_bot
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-v4-flash}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-https://api.deepseek.com}
+      ALIBABA_API_KEY: ${ALIBABA_API_KEY}
+      ALIBABA_API_BASE: ${ALIBABA_API_BASE:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v4}
       HOST: 0.0.0.0
       PORT: 8000
     ports:
