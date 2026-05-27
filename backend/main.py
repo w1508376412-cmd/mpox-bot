@@ -10,6 +10,7 @@ from generator import generate_answer
 from word_export import markdown_to_docx
 from config import get_settings
 import os
+import uuid
 
 settings = get_settings()
 
@@ -19,8 +20,44 @@ def ensure_runtime_schema():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS documents (
+                        id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        url TEXT NOT NULL,
+                        publish_date DATE NOT NULL,
+                        region TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS chunks (
+                        id TEXT PRIMARY KEY,
+                        document_id TEXT REFERENCES documents(id) ON DELETE CASCADE,
+                        content TEXT NOT NULL,
+                        topic TEXT[] NOT NULL,
+                        source TEXT NOT NULL,
+                        url TEXT NOT NULL,
+                        publish_date DATE NOT NULL,
+                        region TEXT NOT NULL,
+                        is_active BOOLEAN DEFAULT true,
+                        version TEXT DEFAULT '1.0',
+                        last_checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
                 cur.execute("ALTER TABLE chunks ADD COLUMN IF NOT EXISTS embedding_json JSONB")
                 cur.execute("ALTER TABLE chunks ADD COLUMN IF NOT EXISTS priority INTEGER DEFAULT 2")
+                cur.execute("CREATE INDEX IF NOT EXISTS chunks_content_idx ON chunks USING gin(to_tsvector('simple', content))")
+                cur.execute("CREATE INDEX IF NOT EXISTS chunks_region_idx ON chunks(region)")
+                cur.execute("CREATE INDEX IF NOT EXISTS chunks_is_active_idx ON chunks(is_active)")
+                cur.execute("CREATE INDEX IF NOT EXISTS chunks_document_id_idx ON chunks(document_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_chunks_embedding_json ON chunks USING gin(embedding_json)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_chunks_priority ON chunks(priority)")
                 cur.execute(
@@ -40,10 +77,78 @@ def ensure_runtime_schema():
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_user_consultations_antiviral_id ON user_consultations(antiviral_id)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_user_consultations_created_at ON user_consultations(created_at)")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_user_consultations_user_name ON user_consultations(user_name)")
+                cur.execute("SELECT COUNT(*) FROM chunks")
+                chunk_count = cur.fetchone()[0]
+                if chunk_count == 0:
+                    seed_sample_data(cur)
             conn.commit()
             print("✓ 数据库运行时结构检查完成")
     except Exception as e:
         print(f"数据库运行时结构检查失败: {e}")
+
+
+def seed_sample_data(cur):
+    """Seed a minimal built-in knowledge base when a remote database is empty."""
+    sample_data = [
+        {
+            "doc_id": "sample_who_001",
+            "title": "猴痘基础知识",
+            "source": "WHO",
+            "url": "https://www.who.int/news-room/fact-sheets/detail/mpox",
+            "publish_date": "2024-08-01",
+            "region": "global",
+            "priority": 2,
+            "chunks": [
+                ("猴痘（mpox）是一种由猴痘病毒引起的病毒性疾病。该病毒可通过与感染者密切接触、污染物品或感染动物传播。症状通常包括皮疹、发热、淋巴结肿大、头痛、肌肉痛、背痛和乏力。", ["症状", "传播", "基础知识"]),
+                ("猴痘主要通过与感染者密切接触传播，包括性接触；也可通过接触被污染的衣物、床单等物品，或接触感染动物传播。", ["传播", "预防"]),
+                ("猴痘症状通常在接触后21天内出现。主要症状包括发热、头痛、肌肉痛、背痛、淋巴结肿大、乏力。发热后1-3天内会出现皮疹，通常从面部开始，然后扩散到身体其他部位。", ["症状", "诊断"]),
+            ],
+        },
+        {
+            "doc_id": "sample_china_cdc_001",
+            "title": "猴痘防控知识（中国）",
+            "source": "中国疾控中心",
+            "url": "https://www.chinacdc.cn/jkkp/crb/ycr/202501/t20250109_303769.html",
+            "publish_date": "2025-01-09",
+            "region": "中国",
+            "priority": 1,
+            "chunks": [
+                ("如果怀疑自己感染猴痘病毒，应尽快前往医疗机构就诊，并主动告知医生症状和可疑接触史。就医途中请做好个人防护，避免与他人密切接触。", ["就医建议", "症状", "中国政策"]),
+                ("猴痘密切接触者应在疾控机构专业人员指导下进行21天健康监测。监测期间应注意观察是否出现发热、皮疹、淋巴结肿大等症状。", ["密接管理", "健康监测", "中国政策"]),
+                ("预防猴痘的关键措施包括：避免与疑似或确诊患者密切接触；不共用毛巾、床单等个人物品；保持良好的手部卫生；避免接触野生动物。", ["预防", "健康教育"]),
+            ],
+        },
+    ]
+
+    for doc in sample_data:
+        cur.execute(
+            """
+            INSERT INTO documents (id, title, source, url, publish_date, region)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            (doc["doc_id"], doc["title"], doc["source"], doc["url"], doc["publish_date"], doc["region"])
+        )
+        for content, topic in doc["chunks"]:
+            cur.execute(
+                """
+                INSERT INTO chunks
+                (id, document_id, content, topic, source, url, publish_date, region, priority)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    doc["doc_id"],
+                    content,
+                    topic,
+                    doc["source"],
+                    doc["url"],
+                    doc["publish_date"],
+                    doc["region"],
+                    doc["priority"],
+                )
+            )
+    print("✓ 空数据库已写入基础知识库样例数据")
 
 
 def save_consultation(user_name: str, antiviral_id: str, question: str, answer: str, risk_type: str, region: str):
