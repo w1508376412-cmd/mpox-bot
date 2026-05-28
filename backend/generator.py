@@ -17,11 +17,11 @@ client = OpenAI(
 
 def load_system_prompt() -> str:
     """加载系统提示词"""
-    import os
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    prompt_path = os.path.join(base_dir, "prompts", "system_prompt.txt")
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        return f.read()
+    return (
+        "你是猴痘/mpox健康科普问答助手。只能根据资料回答，不做医学诊断。"
+        "症状或接触史相关问题必须建议咨询医疗机构或当地疾控。"
+        "回答要简洁、中文、友好，只输出合法JSON。"
+    )
 
 
 def generate_answer(
@@ -49,25 +49,11 @@ def generate_answer(
         "general": ""
     }
 
+    compact_context = context[:900]
     user_prompt = f"""{risk_instructions.get(risk_type, "")}
-
-【资料】
-{context}
-
-【用户问题】
-{question}
-
-请严格按照以下JSON格式回答，不要输出任何JSON之外的内容：
-{{
-  "answer": "你的回答内容（使用markdown格式，可以用**加粗**、- 列表 等）",
-  "follow_up_questions": ["推荐问题1", "推荐问题2", "推荐问题3"]
-}}
-
-要求：
-1. answer中直接回答问题，内容简洁清晰，使用markdown格式排版
-2. follow_up_questions给出3个用户可能会继续追问的相关问题
-3. **绝对不要**在answer中包含"参考来源"或"资料来源"章节，也**不要**在正文中使用"（来源：xxx）"或"据xxx报道"等行内引用，来源信息系统会自动在卡片下方统一展示
-4. 如果涉及症状，必须建议就医
+资料：{compact_context}
+问题：{question}
+请只输出JSON：{{"answer":"简洁中文回答，markdown格式，不写参考来源","follow_up_questions":["问题1","问题2","问题3"]}}
 """
 
     try:
@@ -79,7 +65,7 @@ def generate_answer(
             ],
             extra_body={"thinking": {"type": "disabled"}},
             temperature=0.3,
-            max_tokens=700
+            max_tokens=300
         )
 
         raw = response.choices[0].message.content

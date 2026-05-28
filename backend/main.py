@@ -9,14 +9,11 @@ from retriever_vector import search_chunks, format_context, get_db_connection
 from generator import generate_answer
 from word_export import markdown_to_docx
 from config import get_settings
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import os
-import time
 import uuid
 
 settings = get_settings()
-KEEPALIVE_INTERVAL_SECONDS = 0.2
-KEEPALIVE_CHUNK = "\n" + (" " * 2048)
 
 
 def ensure_runtime_schema():
@@ -281,7 +278,7 @@ def build_chat_response(request: ChatRequest) -> ChatResponse:
     chunks = search_chunks(
         question=request.question,
         region=request.region,
-        top_k=3
+        top_k=1
     )
 
     if not chunks:
@@ -340,41 +337,37 @@ def build_chat_response(request: ChatRequest) -> ChatResponse:
     )
 
 
-def stream_chat_response(request: ChatRequest):
-    # Send JSON whitespace while the model is generating so deployment proxies do not
-    # close an otherwise-idle request. Leading whitespace is valid before JSON.
+def build_chat_response_with_timeout(request: ChatRequest) -> ChatResponse:
     executor = ThreadPoolExecutor(max_workers=1)
     try:
-        started_at = time.monotonic()
         future = executor.submit(build_chat_response, request)
-        while not future.done():
-            if time.monotonic() - started_at >= settings.chat_timeout_seconds:
-                yield ChatResponse(
-                    answer="抱歉，我暂时无法回答您的问题。请稍后再试或直接咨询医疗机构。",
-                    risk_type="general",
-                    sources=[],
-                    follow_up_questions=[]
-                ).model_dump_json()
-                return
-            yield KEEPALIVE_CHUNK
-            time.sleep(KEEPALIVE_INTERVAL_SECONDS)
-        yield future.result().model_dump_json()
+        return future.result(timeout=settings.chat_timeout_seconds)
+
+    except FutureTimeoutError:
+        print("生成回答超时")
+        future.cancel()
+        return ChatResponse(
+            answer="抱歉，我暂时无法回答您的问题。请稍后再试或直接咨询医疗机构。",
+            risk_type="general",
+            sources=[],
+            follow_up_questions=[]
+        )
 
     except HTTPException:
         raise
     except Exception as e:
         print(f"处理请求时出错: {e}")
-        yield ChatResponse(
+        return ChatResponse(
             answer="抱歉，服务暂时不可用。请稍后再试或直接咨询医疗机构。",
             risk_type="general",
             sources=[],
             follow_up_questions=[]
-        ).model_dump_json()
+        )
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
 
 
-@app.post("/chat")
+@app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
     问答接口
@@ -385,10 +378,7 @@ async def chat(request: ChatRequest):
     Returns:
         包含回答、风险类型和来源的响应
     """
-    return StreamingResponse(
-        stream_chat_response(request),
-        media_type="application/json"
-    )
+    return build_chat_response_with_timeout(request)
 
 
 if __name__ == "__main__":
