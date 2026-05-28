@@ -79,7 +79,7 @@ def generate_answer(
             ],
             extra_body={"thinking": {"type": "disabled"}},
             temperature=0.3,
-            max_tokens=1500
+            max_tokens=700
         )
 
         raw = response.choices[0].message.content

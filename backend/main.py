@@ -281,7 +281,7 @@ def build_chat_response(request: ChatRequest) -> ChatResponse:
     chunks = search_chunks(
         question=request.question,
         region=request.region,
-        top_k=5
+        top_k=3
     )
 
     if not chunks:
