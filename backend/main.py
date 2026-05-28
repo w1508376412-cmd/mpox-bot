@@ -16,6 +16,7 @@ import uuid
 
 settings = get_settings()
 KEEPALIVE_INTERVAL_SECONDS = 0.2
+KEEPALIVE_CHUNK = "\n" + (" " * 2048)
 
 
 def ensure_runtime_schema():
@@ -346,7 +347,7 @@ def stream_chat_response(request: ChatRequest):
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(build_chat_response, request)
             while not future.done():
-                yield " "
+                yield KEEPALIVE_CHUNK
                 time.sleep(KEEPALIVE_INTERVAL_SECONDS)
             yield future.result().model_dump_json()
 
