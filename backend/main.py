@@ -9,7 +9,6 @@ from retriever_vector import search_chunks, format_context, get_db_connection
 from generator import generate_answer
 from word_export import markdown_to_docx
 from config import get_settings
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import os
 import uuid
 
@@ -337,36 +336,6 @@ def build_chat_response(request: ChatRequest) -> ChatResponse:
     )
 
 
-def build_chat_response_with_timeout(request: ChatRequest) -> ChatResponse:
-    executor = ThreadPoolExecutor(max_workers=1)
-    try:
-        future = executor.submit(build_chat_response, request)
-        return future.result(timeout=settings.chat_timeout_seconds)
-
-    except FutureTimeoutError:
-        print("生成回答超时")
-        future.cancel()
-        return ChatResponse(
-            answer="抱歉，我暂时无法回答您的问题。请稍后再试或直接咨询医疗机构。",
-            risk_type="general",
-            sources=[],
-            follow_up_questions=[]
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"处理请求时出错: {e}")
-        return ChatResponse(
-            answer="抱歉，服务暂时不可用。请稍后再试或直接咨询医疗机构。",
-            risk_type="general",
-            sources=[],
-            follow_up_questions=[]
-        )
-    finally:
-        executor.shutdown(wait=False, cancel_futures=True)
-
-
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
@@ -378,7 +347,18 @@ async def chat(request: ChatRequest):
     Returns:
         包含回答、风险类型和来源的响应
     """
-    return build_chat_response_with_timeout(request)
+    try:
+        return build_chat_response(request)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"处理请求时出错: {e}")
+        return ChatResponse(
+            answer="抱歉，服务暂时不可用。请稍后再试或直接咨询医疗机构。",
+            risk_type="general",
+            sources=[],
+            follow_up_questions=[]
+        )
 
 
 if __name__ == "__main__":
