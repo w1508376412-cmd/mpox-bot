@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     openai_model: str = "deepseek-v4-flash"
     openai_api_base: str = "https://api.deepseek.com"
-    chat_timeout_seconds: float = 30.0
+    chat_timeout_seconds: float = 2.0
 
     # 阿里百炼配置（用于向量生成）
     alibaba_api_key: str = ""
