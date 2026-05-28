@@ -15,7 +15,7 @@ import time
 import uuid
 
 settings = get_settings()
-KEEPALIVE_INTERVAL_SECONDS = 1
+KEEPALIVE_INTERVAL_SECONDS = 0.2
 
 
 def ensure_runtime_schema():

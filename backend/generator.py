@@ -9,7 +9,9 @@ import json
 settings = get_settings()
 client = OpenAI(
     api_key=settings.openai_api_key,
-    base_url=settings.openai_api_base if settings.openai_api_base else None
+    base_url=settings.openai_api_base if settings.openai_api_base else None,
+    timeout=settings.chat_timeout_seconds,
+    max_retries=0
 )
 
 
@@ -20,6 +22,35 @@ def load_system_prompt() -> str:
     prompt_path = os.path.join(base_dir, "prompts", "system_prompt.txt")
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read()
+
+
+def build_context_fallback_answer(context: str, risk_type: RiskType) -> Tuple[str, List[str]]:
+    """Create a concise answer from retrieved materials if the model call is unavailable."""
+    context_lines = []
+    for line in context.splitlines():
+        cleaned = line.strip()
+        if cleaned.startswith("正文："):
+            context_lines.append(cleaned.replace("正文：", "", 1))
+        elif cleaned and not any(cleaned.startswith(prefix) for prefix in ("【资料", "来源：", "内容：", "标题：")):
+            context_lines.append(cleaned)
+
+    summary = "\n".join(dict.fromkeys(context_lines))
+    if len(summary) > 700:
+        summary = summary[:700].rstrip() + "..."
+
+    safety_prefix = get_safety_prefix(risk_type)
+    answer = (
+        "根据已检索到的权威资料，相关要点如下：\n\n"
+        f"{summary}\n\n"
+        "**建议下一步**：如果出现皮疹、发热、淋巴结肿大等疑似症状，"
+        "或有可疑接触史，请尽快咨询医疗机构或当地疾控部门。"
+    )
+    follow_up = [
+        "猴痘的潜伏期是多久？",
+        "出现疑似猴痘症状应该怎么办？",
+        "猴痘主要通过哪些方式传播？",
+    ]
+    return safety_prefix + answer, follow_up
 
 
 def generate_answer(
@@ -111,4 +142,4 @@ def generate_answer(
 
     except Exception as e:
         print(f"生成回答失败: {e}")
-        return "抱歉，我暂时无法回答您的问题。请稍后再试或直接咨询医疗机构。", []
+        return build_context_fallback_answer(context, risk_type)
