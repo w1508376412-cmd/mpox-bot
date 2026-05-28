@@ -3,10 +3,10 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    # OpenAI配置（用于对话生成）
+    # OpenAI-compatible chat completion config. Defaults target DeepSeek.
     openai_api_key: str
-    openai_model: str = "gpt-4o-mini"
-    openai_api_base: str = ""  # 支持自定义API地址，空字符串表示使用默认
+    openai_model: str = "deepseek-v4-flash"
+    openai_api_base: str = "https://api.deepseek.com"
 
     # 阿里百炼配置（用于向量生成）
     alibaba_api_key: str = ""
