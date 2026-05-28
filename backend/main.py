@@ -9,10 +9,13 @@ from retriever_vector import search_chunks, format_context, get_db_connection
 from generator import generate_answer
 from word_export import markdown_to_docx
 from config import get_settings
+from concurrent.futures import ThreadPoolExecutor
 import os
+import time
 import uuid
 
 settings = get_settings()
+KEEPALIVE_INTERVAL_SECONDS = 1
 
 
 def ensure_runtime_schema():
@@ -337,11 +340,15 @@ def build_chat_response(request: ChatRequest) -> ChatResponse:
 
 
 def stream_chat_response(request: ChatRequest):
-    # Send JSON whitespace immediately so deployment proxies do not close idle requests
-    # while the model is still generating.
-    yield " "
+    # Send JSON whitespace while the model is generating so deployment proxies do not
+    # close an otherwise-idle request. Leading whitespace is valid before JSON.
     try:
-        yield build_chat_response(request).model_dump_json()
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(build_chat_response, request)
+            while not future.done():
+                yield " "
+                time.sleep(KEEPALIVE_INTERVAL_SECONDS)
+            yield future.result().model_dump_json()
 
     except HTTPException:
         raise
