@@ -260,7 +260,102 @@ async def export_word(request: ExportWordRequest):
         raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
 
 
-@app.post("/chat", response_model=ChatResponse)
+def build_chat_response(request: ChatRequest) -> ChatResponse:
+    """
+    Build the chat response synchronously.
+
+    Args:
+        request: 包含用户问题和地区的请求
+
+    Returns:
+        包含回答、风险类型和来源的响应
+    """
+    # 1. 风险分类
+    risk_type = classify_question(request.question)
+
+    # 2. 检索相关知识片段
+    chunks = search_chunks(
+        question=request.question,
+        region=request.region,
+        top_k=5
+    )
+
+    if not chunks:
+        return ChatResponse(
+            answer="抱歉，暂时没有找到足够相关的资料。请尝试换个问法，或直接咨询医疗机构。",
+            risk_type=risk_type,
+            sources=[],
+            follow_up_questions=[]
+        )
+
+    # 3. 格式化上下文
+    context = format_context(chunks)
+
+    # 4. 生成回答
+    answer, follow_up_questions = generate_answer(
+        question=request.question,
+        context=context,
+        risk_type=risk_type
+    )
+
+    # 5. 提取来源信息
+    sources = [
+        SourceInfo(
+            source=chunk["source"],
+            title=chunk["title"],
+            url=chunk["url"],
+            publish_date=chunk["publish_date"]
+        )
+        for chunk in chunks
+    ]
+
+    # 去重来源
+    unique_sources = []
+    seen = set()
+    for source in sources:
+        key = (source.source, source.title, source.url)
+        if key not in seen:
+            seen.add(key)
+            unique_sources.append(source)
+
+    # 6. 保存用户咨询记录
+    save_consultation(
+        user_name=request.user_name,
+        antiviral_id=request.antiviral_id,
+        question=request.question,
+        answer=answer,
+        risk_type=risk_type,
+        region=request.region
+    )
+
+    return ChatResponse(
+        answer=answer,
+        risk_type=risk_type,
+        sources=unique_sources,
+        follow_up_questions=follow_up_questions
+    )
+
+
+def stream_chat_response(request: ChatRequest):
+    # Send JSON whitespace immediately so deployment proxies do not close idle requests
+    # while the model is still generating.
+    yield " "
+    try:
+        yield build_chat_response(request).model_dump_json()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"处理请求时出错: {e}")
+        yield ChatResponse(
+            answer="抱歉，服务暂时不可用。请稍后再试或直接咨询医疗机构。",
+            risk_type="general",
+            sources=[],
+            follow_up_questions=[]
+        ).model_dump_json()
+
+
+@app.post("/chat")
 async def chat(request: ChatRequest):
     """
     问答接口
@@ -271,78 +366,10 @@ async def chat(request: ChatRequest):
     Returns:
         包含回答、风险类型和来源的响应
     """
-    try:
-        # 1. 风险分类
-        risk_type = classify_question(request.question)
-
-        # 2. 检索相关知识片段
-        chunks = search_chunks(
-            question=request.question,
-            region=request.region,
-            top_k=5
-        )
-
-        if not chunks:
-            raise HTTPException(
-                status_code=404,
-                detail="未找到相关资料，请尝试换个问法或直接咨询医疗机构"
-            )
-
-        # 3. 格式化上下文
-        context = format_context(chunks)
-
-        # 4. 生成回答
-        answer, follow_up_questions = generate_answer(
-            question=request.question,
-            context=context,
-            risk_type=risk_type
-        )
-
-        # 5. 提取来源信息
-        sources = [
-            SourceInfo(
-                source=chunk["source"],
-                title=chunk["title"],
-                url=chunk["url"],
-                publish_date=chunk["publish_date"]
-            )
-            for chunk in chunks
-        ]
-
-        # 去重来源
-        unique_sources = []
-        seen = set()
-        for source in sources:
-            key = (source.source, source.title, source.url)
-            if key not in seen:
-                seen.add(key)
-                unique_sources.append(source)
-
-        # 6. 保存用户咨询记录
-        save_consultation(
-            user_name=request.user_name,
-            antiviral_id=request.antiviral_id,
-            question=request.question,
-            answer=answer,
-            risk_type=risk_type,
-            region=request.region
-        )
-
-        return ChatResponse(
-            answer=answer,
-            risk_type=risk_type,
-            sources=unique_sources,
-            follow_up_questions=follow_up_questions
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"处理请求时出错: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="服务暂时不可用，请稍后再试"
-        )
+    return StreamingResponse(
+        stream_chat_response(request),
+        media_type="application/json"
+    )
 
 
 if __name__ == "__main__":
