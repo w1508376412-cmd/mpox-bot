@@ -77,6 +77,7 @@ def generate_answer(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
+            extra_body={"thinking": {"type": "disabled"}},
             temperature=0.3,
             max_tokens=1500
         )
