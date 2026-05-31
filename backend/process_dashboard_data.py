@@ -83,8 +83,8 @@ def process_and_update():
                     cur.execute(
                         """
                         INSERT INTO chunks
-                        (id, document_id, content, topic, source, url, publish_date, region, priority, embedding_json, is_active)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, true)
+                        (id, document_id, content, topic, source, url, publish_date, region, priority, embedding, embedding_json, is_active)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector, %s::jsonb, true)
                         """,
                         (
                             chunk_id,
@@ -96,6 +96,7 @@ def process_and_update():
                             metadata['publish_date'],
                             metadata['region'],
                             metadata['priority'],
+                            embedding,
                             json.dumps(embedding)
                         )
                     )

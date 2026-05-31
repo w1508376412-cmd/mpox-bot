@@ -135,10 +135,11 @@ def process_docx_files(file_configs):
                 cur.execute(
                     """
                     INSERT INTO chunks
-                    (id, document_id, content, topic, source, url, publish_date, region, priority, embedding_json, is_active)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, true)
+                    (id, document_id, content, topic, source, url, publish_date, region, priority, embedding, embedding_json, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector, %s::jsonb, true)
                     ON CONFLICT (id) DO UPDATE SET
                         content = EXCLUDED.content,
+                        embedding = EXCLUDED.embedding,
                         embedding_json = EXCLUDED.embedding_json,
                         priority = EXCLUDED.priority
                     """,
@@ -152,6 +153,7 @@ def process_docx_files(file_configs):
                         metadata['publish_date'],
                         metadata['region'],
                         metadata['priority'],
+                        embedding,
                         embedding_json
                     )
                 )

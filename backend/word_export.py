@@ -5,6 +5,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from io import BytesIO
 import re
 from datetime import datetime
+from reference_sources import select_reference_sources
 
 
 def markdown_to_docx(
@@ -62,7 +63,7 @@ def markdown_to_docx(
     if sources and len(sources) > 0:
         doc.add_paragraph('')
         doc.add_heading('参考来源', level=1)
-        for src in sources:
+        for src in select_reference_sources(sources):
             source_name = src.get('source', '') if isinstance(src, dict) else src.source
             publish_date = src.get('publish_date', '') if isinstance(src, dict) else src.publish_date
             url = src.get('url', '') if isinstance(src, dict) else src.url

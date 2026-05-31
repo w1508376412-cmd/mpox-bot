@@ -7,6 +7,7 @@ from typing import List, Dict, Any
 import json
 from embedder_alibaba import embed_text, cosine_similarity
 from config import get_settings
+import datetime
 
 settings = get_settings()
 
@@ -17,6 +18,42 @@ def get_db_connection():
         settings.database_url,
         client_encoding='utf8'
     )
+
+
+def has_pgvector_embedding(conn) -> bool:
+    """Check whether this database has the pgvector embedding column."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'chunks'
+                  AND column_name = 'embedding'
+            )
+            """
+        )
+        return bool(cur.fetchone()[0])
+
+
+def calculate_weighted_score(similarity: float, priority: int, publish_date) -> float:
+    """Apply the same priority, recency, and semantic weighting to a similarity score."""
+    priority_weight = {
+        1: 1.5,
+        2: 1.2,
+        3: 1.0,
+    }.get(priority, 1.0)
+
+    days_diff = (datetime.date.today() - publish_date).days
+    if days_diff <= 60:
+        time_weight = 1.8
+    elif days_diff <= 365:
+        time_weight = 1.3
+    else:
+        time_weight = 1.0
+
+    semantic_boost = 1.5 if similarity > 0.7 else 1.0
+    return similarity * priority_weight * time_weight * semantic_boost
 
 
 def search_chunks_vector(
@@ -46,9 +83,10 @@ def search_chunks_vector(
         print(f"正在生成问题向量...")
         question_vector = embed_text(question)
 
-        # 2. 从数据库获取候选片段（使用pgvector的余弦相似度算子 <=>）
-        # 注意：1 - (vector <=> question_vector) = cosine similarity
         with get_db_connection() as conn:
+            if not has_pgvector_embedding(conn):
+                return search_chunks_json_vector(conn, question_vector, question, region, top_k)
+
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -81,27 +119,7 @@ def search_chunks_vector(
 
                     if similarity is None: similarity = 0.0
 
-                    # 优先级权重 (稍微调低权重差距，避免 Level 1 绝对霸屏)
-                    priority_weight = {
-                        1: 1.5, 
-                        2: 1.2,
-                        3: 1.0
-                    }.get(priority, 1.0)
-
-                    # 时间加权 (扩大近期资料的加成范围)
-                    import datetime
-                    days_diff = (datetime.date(2026, 5, 18) - publish_date).days
-                    if days_diff <= 60: 
-                        time_weight = 1.8
-                    elif days_diff <= 365:
-                        time_weight = 1.3
-                    else:
-                        time_weight = 1.0
-                    
-                    # 语义锚定加成：如果相似度极高，给予额外权重确保针对性内容不被淹没
-                    semantic_boost = 1.5 if similarity > 0.7 else 1.0
-
-                    weighted_score = similarity * priority_weight * time_weight * semantic_boost
+                    weighted_score = calculate_weighted_score(similarity, priority, publish_date)
 
                     results.append({
                         "content": content,
@@ -187,6 +205,60 @@ def search_chunks_text_fallback(
                 })
 
             return results
+
+
+def search_chunks_json_vector(
+    conn,
+    question_vector: List[float],
+    question: str,
+    region: str = "中国",
+    top_k: int = 5,
+) -> List[Dict[str, Any]]:
+    """Vector search fallback for databases without pgvector installed."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                c.content, c.source, c.url, c.publish_date, c.region, c.priority,
+                c.embedding_json, d.title
+            FROM chunks c
+            JOIN documents d ON c.document_id = d.id
+            WHERE c.is_active = true
+              AND (c.region = %s OR c.region = 'global')
+              AND c.embedding_json IS NOT NULL
+            """,
+            (region,),
+        )
+
+        rows = cur.fetchall()
+
+    if not rows:
+        print("警告：数据库中没有JSON向量数据，回退到文本匹配")
+        return search_chunks_text_fallback(question, region, top_k)
+
+    results = []
+    for row in rows:
+        content, source, url, publish_date, region_val, priority, embedding_json, title = row
+        vector = embedding_json
+        if isinstance(vector, str):
+            vector = json.loads(vector)
+
+        similarity = cosine_similarity(question_vector, vector)
+        weighted_score = calculate_weighted_score(similarity, priority, publish_date)
+        results.append({
+            "content": content,
+            "source": source,
+            "title": title,
+            "url": url,
+            "publish_date": publish_date,
+            "region": region_val,
+            "priority": priority,
+            "similarity": similarity,
+            "weighted_score": weighted_score
+        })
+
+    results.sort(key=lambda x: x["weighted_score"], reverse=True)
+    return results[:top_k]
 
 
 def format_context(chunks: List[Dict[str, Any]]) -> str:

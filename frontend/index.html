@@ -55,6 +55,7 @@
             min-height: 400px;
             max-height: 600px;
             overflow-y: auto;
+            overflow-anchor: none;
         }
 
         .message {
@@ -352,9 +353,6 @@
         // 页面加载时初始化
         window.addEventListener('DOMContentLoaded', initSuggestions);
 
-        // 保存最新的回答数据，用于导出Word
-        let lastAnswerData = null;
-
         // 清除错误状态
         [userNameInput, antiviralIdInput].forEach(input => {
             input.addEventListener('input', () => {
@@ -404,7 +402,7 @@
             }
 
             // 显示用户消息
-            addUserMessage(question);
+            const questionMessage = addUserMessage(question);
             if (!customQuestion) questionInput.value = '';
             sendBtn.disabled = true;
 
@@ -414,7 +412,6 @@
             loadingDiv.id = 'loading-msg';
             loadingDiv.innerHTML = '<div class="loading-dots">正在思考</div>';
             chatArea.appendChild(loadingDiv);
-            chatArea.scrollTop = chatArea.scrollHeight;
 
             try {
                 const response = await fetch('/chat', {
@@ -435,16 +432,15 @@
                 if (!response.ok) throw new Error('请求失败');
 
                 const data = await response.json();
-                lastAnswerData = { ...data, question, user_name: userName, antiviral_id: antiviralId };
 
-                displayAnswer(data, question);
+                displayAnswer(data, question, questionMessage);
 
             } catch (error) {
                 // 移除加载动画
                 const loadingEl = document.getElementById('loading-msg');
                 if (loadingEl) loadingEl.remove();
 
-                addBotError('抱歉，服务暂时不可用。请稍后再试或直接咨询医疗机构。');
+                addBotError('抱歉，服务暂时不可用。请稍后再试或直接咨询医疗机构。', questionMessage);
             } finally {
                 sendBtn.disabled = false;
                 questionInput.focus();
@@ -456,18 +452,23 @@
             div.className = 'message user';
             div.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
             chatArea.appendChild(div);
-            chatArea.scrollTop = chatArea.scrollHeight;
+            return div;
         }
 
-        function addBotError(text) {
+        function scrollQuestionIntoView(messageEl) {
+            const topPadding = 8;
+            chatArea.scrollTop = Math.max(0, messageEl.offsetTop - chatArea.offsetTop - topPadding);
+        }
+
+        function addBotError(text, questionMessage) {
             const div = document.createElement('div');
             div.className = 'message bot';
             div.innerHTML = `<div class="answer-card" style="border-left:3px solid #ff4444;"><p>${text}</p></div>`;
             chatArea.appendChild(div);
-            chatArea.scrollTop = chatArea.scrollHeight;
+            scrollQuestionIntoView(questionMessage);
         }
 
-        function displayAnswer(data, question) {
+        function displayAnswer(data, question, questionMessage) {
             // 渲染markdown
             const answerHtml = typeof marked !== 'undefined' ? marked.parse(data.answer) : data.answer.replace(/\n/g, '<br>');
 
@@ -475,7 +476,7 @@
             let sourcesHtml = '';
             if (data.sources && data.sources.length > 0) {
                 sourcesHtml = '<div class="sources"><div class="sources-title">📚 参考来源</div>';
-                data.sources.forEach(s => {
+                data.sources.slice(0, 2).forEach(s => {
                     // 格式化为：《标题》- 来源
                     const sourceText = `《${escapeHtml(s.title)}》- ${escapeHtml(s.source)}`;
                     sourcesHtml += `<div class="source-item">• ${sourceText}</div>`;
@@ -494,11 +495,8 @@
                 followUpHtml += '</div>';
             }
 
-            // 生成唯一ID用于导出
-            const answerId = 'answer-' + Date.now();
-
             const cardHtml = `
-                <div class="answer-card" id="${answerId}">
+                <div class="answer-card">
                     <div class="answer-content">${answerHtml}</div>
                     ${sourcesHtml}
                     ${followUpHtml}
@@ -509,15 +507,8 @@
             div.className = 'message bot';
             div.innerHTML = cardHtml;
 
-            // 将回答数据绑定到DOM元素上
-            div.querySelector('.answer-card').dataset.answer = JSON.stringify({
-                answer: data.answer,
-                question: question,
-                sources: data.sources || []
-            });
-
             chatArea.appendChild(div);
-            chatArea.scrollTop = chatArea.scrollHeight;
+            scrollQuestionIntoView(questionMessage);
         }
 
         function escapeHtml(text) {

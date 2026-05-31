@@ -9,6 +9,7 @@ from retriever_vector import search_chunks, format_context, get_db_connection
 from generator import generate_answer
 from word_export import markdown_to_docx
 from config import get_settings
+from reference_sources import select_reference_sources
 import os
 
 settings = get_settings()
@@ -85,7 +86,7 @@ async def export_word(request: ExportWordRequest):
                 "url": s.url,
                 "publish_date": str(s.publish_date)
             }
-            for s in request.sources
+            for s in select_reference_sources(request.sources)
         ]
 
         # 生成Word文档
@@ -164,14 +165,8 @@ async def chat(request: ChatRequest):
             for chunk in chunks
         ]
 
-        # 去重来源
-        unique_sources = []
-        seen = set()
-        for source in sources:
-            key = (source.source, source.title, source.url)
-            if key not in seen:
-                seen.add(key)
-                unique_sources.append(source)
+        # 去重来源，并限制用户可见参考来源最多为两条。
+        unique_sources = select_reference_sources(sources)
 
         # 6. 保存用户咨询记录
         save_consultation(
